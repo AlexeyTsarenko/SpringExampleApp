@@ -1,47 +1,59 @@
 package com.springExampleApp.controllers;
 
-import com.springExampleApp.dto.UserUpdateDto;
+import com.springExampleApp.dto.AuthenticationRequestDto;
 import com.springExampleApp.entities.UserEntity;
-import com.springExampleApp.dto.UserSaveDto;
+import com.springExampleApp.security.JwtTokenProvider;
 import com.springExampleApp.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 public class UserController {
 
+    private final AuthenticationManager authenticationManager;
+
+    private final JwtTokenProvider jwtTokenProvider;
+
     private final UserService userService;
 
     @Autowired
-    UserController(UserService userService){
+    public UserController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider, UserService userService) {
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
         this.userService = userService;
     }
 
-    @PostMapping("/save")
-    public ResponseEntity<String> save(@RequestBody UserSaveDto userSaveDto){
-        UserEntity simpleEntity =  userService.save(userSaveDto);
-        return new ResponseEntity<>(simpleEntity.getId().toString(), HttpStatus.CREATED);
-    }
-    @PutMapping("/update")
-    public ResponseEntity<String> update(@RequestBody UserUpdateDto userUpdateDto){
-        return userService.update(userUpdateDto);
-    }
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> delete(@PathVariable Integer id){
-        return userService.delete(id);
-    }
+    @PostMapping("/login")
+    public ResponseEntity login(@RequestBody AuthenticationRequestDto requestDto) {
+        try {
+            String email = requestDto.getEmail();
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, requestDto.getPassword()));
+            UserEntity user = userService.findByEmail(email);
 
-    @GetMapping(path = "/getByDate/{date}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Page<UserEntity> getEntities(@RequestParam(value = "page", defaultValue = "0") int page,
-                                        @RequestParam(value = "limit", defaultValue = "5") int limit,
-                                        @PathVariable String date) {
-        Pageable pageableRequest = PageRequest.of(page, limit);
-        return userService.getByBirthDate(date, pageableRequest);
+            if (user == null) {
+                throw new UsernameNotFoundException("User with username: " + email + " not found");
+            }
+
+            String token = jwtTokenProvider.createToken(email, user.getRoles());
+
+            Map<Object, Object> response = new HashMap<>();
+            response.put("username", email);
+            response.put("token", token);
+
+            return ResponseEntity.ok(response);
+        } catch (AuthenticationException e) {
+            throw new BadCredentialsException("Invalid username or password");
+        }
     }
 }

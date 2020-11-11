@@ -12,11 +12,11 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserUpdateDto {
-    private int id;
+    private long id;
 
     private String email;
 
-    private Integer password;
+    private String password;
 
     private Date birthDate;
 

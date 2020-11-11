@@ -15,7 +15,7 @@ public class UserSaveDto {
 
     private String email;
 
-    private Integer password;
+    private String password;
 
     private Date birthDate;
 

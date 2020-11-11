@@ -3,39 +3,34 @@ package com.springExampleApp.entities;
 import lombok.Data;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
-import javax.validation.constraints.NotNull;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Data
 @Table(name = "users")
-public class UserEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+public class UserEntity extends BaseEntity {
 
-    @Email
+
     @Column
     private String email;
 
-    @NotNull
     @Column
-    private Integer password;
+    private String password;
 
-    @NotNull
     @Column
     private String firstName;
 
-    @NotNull
     @Column
     private String lastName;
 
-    @NotNull
     @Column
     private Date birthDate;
 
-    @NotNull
-    @Column
-    private String status;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "users_roles",
+    joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
+    inverseJoinColumns = {@JoinColumn(name = "role_id", referencedColumnName = "id")})
+    private List<Role> roles;
+
 }

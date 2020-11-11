@@ -9,14 +9,11 @@ import javax.validation.constraints.NotNull;
 @Entity
 @Data
 @Table(name = "history")
-public class HistoryEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Integer id;
+public class HistoryEntity extends BaseEntity {
 
     @NotNull
     @Column
-    Integer entityId;
+    Long entityId;
 
     @NotNull
     @Column
